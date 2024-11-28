@@ -1,2 +1,6 @@
 # himaplus-authn
-ひまぷらの認証サーバ
+
+## 概要
+
+ひまぷらの認証サーバ  
+go-echo-pocketbaseの認証サーバ  
