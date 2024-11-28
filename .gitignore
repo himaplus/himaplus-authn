@@ -50,6 +50,9 @@ memo.*
 
 # デバッグ時のファイル
 
+# 成果データ
+pb_data/
+
 # asset direcotry
 
 # upload directory
