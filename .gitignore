@@ -1,0 +1,60 @@
+## Pasted from gitignore.io
+
+## Environment-specific items
+
+# Linux/Unix specific temporary files
+.nfs*
+
+# macOS specific system files
+.DS_Store
+.AppleDouble
+__MACOSX
+
+# Windows specific system files
+Desktop.ini
+
+# Editor and IDE specific temporary or configuration files
+*.swp
+*.swo
+.idea/
+.vscode/
+
+## Generic items
+
+# env file
+*.env*
+!*.env*.template
+
+# log
+*.log
+
+# back up
+*.bak
+
+# temp
+*.tmp
+
+# todo
+TODO.*
+
+# memo
+memo.*
+
+## Docker-related items
+
+# volumes
+
+## Project-specific items
+
+# ライブラリなどリポジトリに含める必要のないディレクトリ
+
+# デバッグ時のファイル
+
+# asset direcotry
+
+# upload directory
+
+## Others items
+
+# empty directory
+!.gitignore
