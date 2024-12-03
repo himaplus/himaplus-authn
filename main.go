@@ -18,6 +18,5 @@ func main() {
 	if err := initInstances.App.Start(); err != nil {
 		logging.ErrorLog("Failed to start server", err)
 		panic(err)
-
 	}
 }
