@@ -20,6 +20,15 @@ pocketbase: v
 インストール手順は[docker-himaplusのインストール項目](https://github.com/unSerori/docker-himaplus/blob/main/README.md#インストール)に記載  
 cloneしてスクリプト実行で、自動的にコンテナー作成と開発環境（: またはデプロイ）を行う  
 
+### OAuth
+
+TODO: 以下のmemoを書き起こす
+
+```text
+(https://console.cloud.google.com/)でプロジェクトを作成
+IdPassをjsonで取得
+```
+
 ## 開発環境
 
 VSCodeで「Attach Visual Studio Code」している  
