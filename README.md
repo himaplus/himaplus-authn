@@ -51,7 +51,8 @@ vscodeのプロジェクト環境設定
             "mode": "auto",
             "program": "${workspaceFolder}",
             "args": [
-                "serve"
+                "serve",
+                "--http=0.0.0.0:8090"
             ]
         }
     ]
