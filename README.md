@@ -27,6 +27,7 @@ TODO: 以下のmemoを書き起こす
 ```text
 (https://console.cloud.google.com/)でプロジェクトを作成
 IdPassをjsonで取得
+pbのOAuth設定にプロバイダーを追加してIdPassを追加、OAuthEnableにする
 ```
 
 ## 開発環境
