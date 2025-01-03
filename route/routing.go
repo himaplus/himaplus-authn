@@ -9,7 +9,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-// エンドポイントのルーティング？
+// グローバルミドルウェア
+func globalMiddleware(pb *pocketbase.PocketBase) {
+	// 現状なし
+}
 
 // ファイルのルーティング
 func fileRouting(pb *pocketbase.PocketBase) {
@@ -52,8 +55,7 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			return re.JSON(http.StatusOK, map[string]string{
 				"googleAccessToken": googleAccessToken,
 			})
-		})
-		// .Bind(apis.RequireAuth()) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
+		}).Bind(apis.RequireAuth()) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
 
 		return se.Next() // CONTEXT: OnServe()くんがエラーを
 	})
@@ -64,9 +66,11 @@ func Routing() *pocketbase.PocketBase {
 	// pbインスタンス
 	pb := pocketbase.New()
 
-	// ルーティング
-	fileRouting(pb)     // ファイル
-	endpointRouting(pb) // カスタムエンドポイントを拡張
+	// 拡張
+
+	globalMiddleware(pb) // ミドルウェア
+	fileRouting(pb)      // ファイル公開
+	endpointRouting(pb)  // カスタムエンドポイントのルーティング
 
 	return pb
 }
