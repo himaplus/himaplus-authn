@@ -55,7 +55,7 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			return re.JSON(http.StatusOK, map[string]string{
 				"googleAccessToken": googleAccessToken,
 			})
-		}).Bind(apis.RequireAuth()) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
+		}).Bind(apis.RequireAuth("_superusers", "users")) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
 
 		return se.Next() // CONTEXT: OnServe()くんがエラーを
 	})

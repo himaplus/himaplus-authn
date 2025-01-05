@@ -1,0 +1,23 @@
+// File Variables
+
+@protocol = http
+@hostname = localhost
+@port = 8090
+@host = {{hostname}}:{{port}}
+@baseUrl = {{protocol}}://{{host}}
+@createdAt = {{$datetime iso8601}}
+@modifiedBy = {{$processEnv USERNAME}}
+
+@jwt = {{$dotenv AUTH_DATA_TOKEN}}
+@accessToken = "access_token"
+
+// Requests
+
+// 認証済みユーザーのアクセストークンを取得
+# @name getTokenAuthedUser
+GET {{baseUrl}}/google/access_token HTTP/1.1
+Authorization: {{jwt}}
+
+###
+
+@accessToken = {{getTokenAuthedUser.response.body.$.googleAccessToken}}
