@@ -26,8 +26,11 @@ TODO: 以下のmemoを書き起こす
 
 ```text
 (https://console.cloud.google.com/)でプロジェクトを作成
+
 IdPassをjsonで取得
+ルートユーザーを作成
 pbのOAuth設定にプロバイダーを追加してIdPassを追加、OAuthEnableにする
+リダイレクトURLとテスターアカウントを登録ｓ
 ```
 
 ## 開発環境
