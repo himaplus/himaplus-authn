@@ -13,6 +13,12 @@
 
 // Requests
 
+// アクセストークンが有効かどうか
+# @name isAccessToken
+GET https://oauth2.googleapis.com/tokeninfo?access_token={{$dotenv GOOGLE_OAUTH_ACCESS_TOKEN}} HTTP/1.1
+
+###
+
 // 認証済みユーザーのアクセストークンを取得
 # @name getTokenAuthedUser
 GET {{baseUrl}}/google/access_token HTTP/1.1
