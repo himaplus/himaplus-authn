@@ -1,8 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"himaplus-authn/common/logging"
 )
+
+func init() {
+	fmt.Println("here is init()")
+}
 
 func main() {
 	// 初期化処理
