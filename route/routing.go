@@ -2,6 +2,7 @@ package route
 
 import (
 	"fmt"
+	"himaplus-authn/common/logging"
 	"himaplus-authn/view"
 	"net/http"
 
@@ -73,6 +74,8 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 	// リフレッシュの検証
 	// fires only for "users" and "managers" auth collections
 	pb.OnRecordAuthRefreshRequest("users").BindFunc(func(re *core.RecordAuthRefreshRequestEvent) error {
+		// 更新
+		fmt.Printf("re.Collection.AuthToken: %v\n", re.Collection.AuthToken) // これを使って
 		// // e.App
 		// // e.Collection
 		// // e.Record
@@ -95,76 +98,23 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 		return re.Next()
 	})
 
-	// // アクセストークン取得検証
-	// pb.OnRecordAuthWithOAuth2Request("users").BindFunc(func(re *core.RecordAuthWithOAuth2RequestEvent) error {
-	// 	fmt.Println("認証後")
-
-	// 	fmt.Printf("re.OAuth2User.AccessToken: %v\n", re.OAuth2User.AccessToken)
-	// 	fmt.Printf("re.OAuth2User.RefreshToken: %v\n", re.OAuth2User.RefreshToken) // access_type=offlineを指定してないとonlineとみなされてもらえない
-
-	// 	return re.Next()
-	// })
-
-	// 認証リクエスト前の調整検証
-	// // 認証リクエスト前にURLに、refresh token取得に必要な情報を追加
-	// pb.OnRecordAuthWithOAuth2Request("users").BindFunc(func(re *core.RecordAuthWithOAuth2RequestEvent) error {
-	// 	// before処理
-
-	// 	// 認証URLをurlとしてパースして取得
-	// 	authUrl, err := url.Parse(re.ProviderClient.AuthURL())
-	// 	fmt.Printf("authUrl: %v\n", authUrl)
-	// 	fmt.Printf("authUrl.RawQuery: %v\n", authUrl.RawQuery)
-	// 	fmt.Printf("re.ProviderClient.Scopes(): %v\n", re.ProviderClient.Scopes())
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	// URLに必要なクエパラを追加
-
-	// 	queryPara := authUrl.Query() // クエリを取得
-	// 	fmt.Printf("queryPara: %v\n", queryPara)
-
-	// 	// 値をセット
-	// 	queryPara.Set("access_type", "offline")
-	// 	queryPara.Set("prompt", "consent")
-	// 	queryPara.Set("redirect_uri", re.ProviderClient.RedirectURL())
-	// 	queryPara.Set("scope", strings.Join([]string{
-	// 		"https://www.googleapis.com/auth/calendar",
-	// 		"https://www.googleapis.com/auth/calendar.readonly",
-	// 		"https://www.googleapis.com/auth/userinfo.email",
-	// 		"https://www.googleapis.com/auth/userinfo.profile",
-	// 	}, " "))
-
-	// 	authUrl.RawQuery = queryPara.Encode() // 元のクエパラに上書き
-	// 	fmt.Printf("authUrl: %v\n", authUrl)
-
-	// 	// 更新したURLを適用
-	// 	re.ProviderClient.SetAuthURL(authUrl.String())
-	// 	fmt.Printf("re.ProviderClient.AuthURL(): %v\n", re.ProviderClient.AuthURL())
-
-	// 	return re.Next()
-	// })
-
 	// TODO: 認証リクエスト後にrefresh tokenを保存
 	pb.OnRecordAuthWithOAuth2Request("users").BindFunc(func(re *core.RecordAuthWithOAuth2RequestEvent) error {
-		if err := re.Next(); err != nil {
+		// before処理
+
+		logging.SimpleLog("Here is OnRecordAuthWithOAuth2Request before hook.")
+
+		if err := re.Next(); err != nil { // before end: return re.Next()
 			return err
 		}
 
 		// after処理
 
-		fmt.Println()
-
-		fmt.Printf("re.ProviderClient.AuthURL(): %v\n", re.ProviderClient.AuthURL())
-		fmt.Printf("re.Auth: %v\n", re.Auth)
-		fmt.Printf("re: %v\n", re)
-		fmt.Printf("re.OAuth2User.AccessToken: %v\n", re.OAuth2User.AccessToken)
-		fmt.Printf("re.OAuth2User.RefreshToken: %v\n", re.OAuth2User.RefreshToken) // access_type=offlineを指定してないとonlineとみなされてもらえない
+		logging.SimpleLog("re.OAuth2User.AccessToken: ", re.OAuth2User.AccessToken)
+		logging.SimpleLog("re.OAuth2User.RefreshToken: ", re.OAuth2User.RefreshToken) // access_type=offlineを指定してないとonlineとみなされてもらえない
 
 		return nil
 	})
-
-	// HACK: 前後処理をまとめれる？
 }
 
 // ルーティング
