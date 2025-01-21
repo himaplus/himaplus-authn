@@ -30,7 +30,7 @@ TODO: 以下のmemoを書き起こす
 IdPassをjsonで取得
 ルートユーザーを作成
 pbのOAuth設定にプロバイダーを追加してIdPassを追加、OAuthEnableにする
-リダイレクトURLとテスターアカウントを登録ｓ
+リダイレクトURLとテスターアカウントを登録
 ```
 
 ## 開発環境
