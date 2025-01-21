@@ -9,6 +9,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/types" // "github.com/pocketbase/pocketbase/tools/types"
 )
 
 // グローバルミドルウェア
@@ -39,6 +40,49 @@ func fileRouting(pb *pocketbase.PocketBase) {
 		}
 		// ルーティング
 		se.Router.GET("/public/{path...}", apis.Static(publicStaticFS, false))
+
+		return se.Next()
+	})
+}
+
+// コレクションの操作
+func collectionOpe(pb *pocketbase.PocketBase) {
+	// access token列を追加
+	pb.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		// カスタム対象のコレクションを取得
+		userCollection, err := se.App.FindCollectionByNameOrId("users")
+		if err != nil {
+			return err
+		}
+
+		// change rule types.Pointer(""): 誰でも, types.Pointer("@request.auth.id != ''"): 認証済みユーザーのみ, types.Pointer("@request.auth.id != id"): 認証済みユーザー自身のみ, nil: 管理者のみ
+		userCollection.ListRule = nil
+		userCollection.ViewRule = types.Pointer("@request.auth.id != id")
+		userCollection.CreateRule = types.Pointer("@request.auth.id != id") // 確定
+		userCollection.UpdateRule = types.Pointer("@request.auth.id != id")
+		userCollection.DeleteRule = nil
+
+		// フィールドやリレーションキーを追加
+
+		// リフレッシュトークンのテキストフィールド追加
+		userCollection.Fields.Add(&core.TextField{
+			Name:     "refreshToken",
+			Max:      255, // The number of characters in google access token is 222.
+			Required: false,
+		})
+
+		// アクセストークンのテキストフィールド追加
+		userCollection.Fields.Add(&core.TextField{
+			Name:     "accessToken",
+			Max:      255, // The number of characters in google refresh token is 103.
+			Required: false,
+		})
+
+		// 保存
+		err = se.App.Save(userCollection)
+		if err != nil {
+			return err
+		}
 
 		return se.Next()
 	})
@@ -102,14 +146,17 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 	pb.OnRecordAuthWithOAuth2Request("users").BindFunc(func(re *core.RecordAuthWithOAuth2RequestEvent) error {
 		// before処理
 
+		// log
 		logging.SimpleLog("Here is OnRecordAuthWithOAuth2Request before hook.")
 
 		if err := re.Next(); err != nil { // before end: return re.Next()
+			logging.ErrorLog("OnRecordAuthWithOAuth2Request: re.Next()", err)
 			return err
 		}
 
 		// after処理
 
+		// log
 		logging.SimpleLog("re.OAuth2User.AccessToken: ", re.OAuth2User.AccessToken)
 		logging.SimpleLog("re.OAuth2User.RefreshToken: ", re.OAuth2User.RefreshToken) // access_type=offlineを指定してないとonlineとみなされてもらえない
 
@@ -126,6 +173,7 @@ func Routing() *pocketbase.PocketBase {
 
 	globalMiddleware(pb) // ミドルウェア
 	fileRouting(pb)      // ファイル公開
+	collectionOpe(pb)    // コレクション操作
 	endpointRouting(pb)  // カスタムエンドポイントのルーティング
 
 	return pb
