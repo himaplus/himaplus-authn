@@ -142,7 +142,7 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 		return re.Next()
 	})
 
-	// TODO: 認証リクエスト後にrefresh tokenを保存
+	// 認証リクエスト後にrefresh tokenを保存
 	pb.OnRecordAuthWithOAuth2Request("users").BindFunc(func(re *core.RecordAuthWithOAuth2RequestEvent) error {
 		// before処理
 
@@ -159,6 +159,30 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 		// log
 		logging.SimpleLog("re.OAuth2User.AccessToken: ", re.OAuth2User.AccessToken)
 		logging.SimpleLog("re.OAuth2User.RefreshToken: ", re.OAuth2User.RefreshToken) // access_type=offlineを指定してないとonlineとみなされてもらえない
+		// logging.SimpleLog("re: ", re) // ok
+		// logging.SimpleLog("re.Auth.Id: ", re.Auth.Id) // ng
+		// logging.SimpleLog("re.Collection.Id: ", re.Collection.Id) // ok
+
+		// トークンをカスタムコレクションで追加した列に保存する
+
+		// レコードを取得
+		logging.SimpleLog("re.Record.Id: ", re.Record.Id) // ok
+		record, err := pb.FindRecordById("users", re.Record.Id)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("record: %v\n", record)
+
+		// トークンをレコードに追加
+		record.Set("refreshToken", re.OAuth2User.RefreshToken)
+		record.Set("accessToken", re.OAuth2User.AccessToken)
+
+		// 保存
+		err = pb.Save(record)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("record: %v\n", record)
 
 		return nil
 	})
