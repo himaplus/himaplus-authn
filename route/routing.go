@@ -100,8 +100,8 @@ func collectionOpe(pb *pocketbase.PocketBase) {
 // カスタムエンドポイント
 func endpointRouting(pb *pocketbase.PocketBase) {
 	// 認証状態を確認
-	pb.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		se.Router.GET("/auth/user", func(re *core.RequestEvent) error {
+	pb.OnServe().BindFunc(func(se *core.ServeEvent) error { // pbインスタンスのOnServe()フックを使って処理を鯖起動時にトリガーする // 処理はBindFunc()に渡す
+		se.Router.GET("/auth/user", func(re *core.RequestEvent) error { // core.RequestEventはreq, resを操作するためのメソッドを持つ
 			// 認証済みユーザー（:アクセスを許されたユーザー）のレコードを取得authUserRecord
 			userRecord := re.Auth
 			fmt.Printf("authUserRecord: %v\n", userRecord)
@@ -214,103 +214,6 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 				"status":  200,
 			})
 		}).Bind(apis.RequireAuth("_superusers", "users")) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
-		return se.Next()
-	})
-
-	// アクセストークンを返す
-	pb.OnServe().BindFunc(func(se *core.ServeEvent) error { // pbインスタンスのOnServe()フックを使って処理を鯖起動時にトリガーする // 処理はBindFunc()に渡す
-		se.Router.GET("/google/access_token", func(re *core.RequestEvent) error { // core.RequestEventはreq, resを操作するためのメソッドを持つ
-			// 認証済みユーザー（:アクセスを許されたユーザー）のレコードを取得authUserRecord
-			userRecord := re.Auth
-			fmt.Printf("authUserRecord: %v\n", userRecord)
-
-			// 認証済みユーザーのリフレッシュトークンを取得
-			refreshToken := userRecord.GetString("refreshToken") // refreshToken := userRecord.FieldsData()["refreshToken"] // 型アサーションが必要
-			fmt.Printf("accessToken: %v\n", refreshToken)
-
-			// クライアントIDとクライアントシークレットの取得
-			pattern := "./client_secret_*.json"
-			clientSecretJsonFileNames, err := filepath.Glob(pattern) // client_secret_*.jsonを取得
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			fmt.Printf("clientSecretJsonFileNames: %v\n", clientSecretJsonFileNames)
-			slices.Sort(clientSecretJsonFileNames)
-			clientSecretJsonFile, err := ioutil.ReadFile(clientSecretJsonFileNames[0])
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			// mapに変換
-			var clientSecretMap map[string]any // 空のJSON宣言
-			err = json.Unmarshal(clientSecretJsonFile, &clientSecretMap)
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			fmt.Printf("clientSecretMap: %v\n", clientSecretMap)
-			clientSecretMapWeb, ok := clientSecretMap["web"].(map[string]any)
-			if !ok {
-				err = errors.New("assertion of value from client_secret.json file failed: web")
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			// anyをstringアサーションして取り出す
-			clientId, clientIdOk := clientSecretMapWeb["client_id"].(string)
-			clientSecret, clientSecretOk := clientSecretMapWeb["client_secret"].(string)
-			if !clientIdOk || !clientSecretOk {
-				err = errors.New("assertion of value from client_secret.json file failed: client_id || client_secret")
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			fmt.Printf("clientId: %v\n", clientId)
-			fmt.Printf("clientSecret: %v\n", clientSecret)
-
-			// Googleへ更新リクエストを送る
-
-			// リクエストの作成
-			method := "POST"                                   // メソッド
-			endopoint := "https://oauth2.googleapis.com/token" // URL
-			form := url.Values{}                               // フォームデータやHTTPクエリパラメータを扱うmap[string][]string型
-			form.Set("grant_type", "refresh_token")            // SetはAddと違って同じキーを上書きする
-			form.Set("refresh_token", refreshToken)
-			form.Set("client_id", clientId)
-			form.Set("client_secret", clientSecret)
-			body := strings.NewReader(form.Encode())              // HTTPエンコードしてボディを作る
-			requ, err := http.NewRequest(method, endopoint, body) // リクエストの作成
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			requ.Header.Set("Content-Type", "application/x-www-form-urlencoded") // ヘッダーを追加
-
-			// リクエストを送る
-			client := &http.Client{ // クライアントを作成
-				Timeout: 10 * time.Second,
-			}
-			resp, err := client.Do(requ) // リクエストを送信しレスポンスを受け取る
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			defer resp.Body.Close() // リソースの解放 必須
-
-			// 構造体にマッピング
-			var refTokenResp responses.RefreshToken
-			err = json.NewDecoder(resp.Body).Decode(&refTokenResp)
-			if err != nil {
-				fmt.Printf("err: %v\n", err)
-				return err
-			}
-			fmt.Printf("req.AccessToken: %v\n", refTokenResp.AccessToken)
-
-			// 値をJSON形式で返却
-			return re.JSON(http.StatusOK, map[string]string{
-				"googleAccessToken": refTokenResp.AccessToken,
-			})
-		}).Bind(apis.RequireAuth("_superusers", "users")) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
-
 		return se.Next()
 	})
 
