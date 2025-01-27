@@ -6,13 +6,13 @@ import (
 
 // 認証確認
 type AuthUserInfo struct {
-	Id         string         `json:"id"`
-	Email      string         `json:"email"`
-	Name       string         `json:"name"`
-	AvatarPath string         `json:"avatorUrl"`
-	Created    types.DateTime `json:"created"` // TODO: 型
-	Updated    types.DateTime `json:"updated"` // TODO: 型
-	// AccessToken string `json:"accessToken"`
+	Id          string         `json:"id"`
+	Email       string         `json:"email"`
+	Name        string         `json:"name"`
+	AvatarPath  string         `json:"avatorUrl"`
+	Created     types.DateTime `json:"created"` // TODO: 型
+	Updated     types.DateTime `json:"updated"` // TODO: 型
+	AccessToken string         `json:"accessToken"`
 }
 
 // リフレッシュ更新エンドポイント
