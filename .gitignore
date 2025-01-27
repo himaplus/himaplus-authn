@@ -59,6 +59,7 @@ pb_data/
 # upload directory
 
 ## Others items
+client_secret_*.json
 
 # empty directory
 !.gitignore

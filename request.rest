@@ -9,13 +9,28 @@
 @modifiedBy = {{$processEnv USERNAME}}
 
 @jwt = {{$dotenv AUTH_DATA_TOKEN}}
-@accessToken = "access_token"
+@accessToken = {{$dotenv GOOGLE_OAUTH_ACCESS_TOKEN}}
+@refreshToken = {{$dotenv GOOGLE_OAUTH_REFRESH_TOKEN}}
+@clientId = {{$dotenv CLIENT_ID}}
+@clientSecret = {{$dotenv CLIENT_SECRET}}
 
 // Requests
 
 // アクセストークンが有効かどうか
 # @name isAccessToken
 GET https://oauth2.googleapis.com/tokeninfo?access_token={{$dotenv GOOGLE_OAUTH_ACCESS_TOKEN}} HTTP/1.1
+
+###
+
+// アクセストークンをリフレッシュする
+# @name refeshAccessToken
+POST https://oauth2.googleapis.com/token HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token
+&refresh_token={{refreshToken}}
+&client_id={{clientId}}
+&client_secret={{clientSecret}}
 
 ###
 
