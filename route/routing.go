@@ -115,7 +115,7 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			auiResp := &responses.AuthUserInfo{
 				Id:         userRecord.Id,
 				Email:      userRecord.Email(),
-				Name:       userRecord.Collection().Name,
+				Name:       userRecord.GetString("name"),
 				AvatarPath: avatarPath,
 				Created:    userRecord.GetDateTime("created"),
 				Updated:    userRecord.GetDateTime("updated"),
