@@ -1,10 +1,20 @@
 package route
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"himaplus-authn/common/logging"
+	"himaplus-authn/dto/responses"
 	"himaplus-authn/view"
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"path/filepath"
+	"reflect"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -95,16 +105,102 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 	// アクセストークンを返す
 	pb.OnServe().BindFunc(func(se *core.ServeEvent) error { // pbインスタンスのOnServe()フックを使って処理を鯖起動時にトリガーする // 処理はBindFunc()に渡す
 		se.Router.GET("/google/access_token", func(re *core.RequestEvent) error { // core.RequestEventはreq, resを操作するためのメソッドを持つ
-			// TODO: 色々な処理
 			// 認証済みユーザー（:アクセスを許されたユーザー）のレコードを取得authUserRecord
 			userRecord := re.Auth
 			fmt.Printf("authUserRecord: %v\n", userRecord)
 
-			// アクセストークンを取得
+			// リフレッシュトークンを使ってアクセストークンを取得
+			refreshToken := userRecord.GetString("refreshToken") // refreshToken := userRecord.FieldsData()["refreshToken"] // 型アサーションが必要
+			fmt.Printf("accessToken: %v\n", refreshToken)
 
-			// OnRecordAuthRefreshRequestと併用する？
+			// Googleへ更新リクエストを送る
 
-			googleAccessToken := "token"
+			// クライアントIDとクライアントシークレットの取得
+
+			// client_secret_*.jsonを取得
+			pattern := "./client_secret_*.json"
+			clientSecretJsonFileNames, err := filepath.Glob(pattern)
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			fmt.Printf("clientSecretJsonFileNames: %v\n", clientSecretJsonFileNames)
+			slices.Sort(clientSecretJsonFileNames)
+			clientSecretJsonFile, err := ioutil.ReadFile(clientSecretJsonFileNames[0])
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			var clientSecretMap map[string]any // 空のJSON宣言
+			err = json.Unmarshal(clientSecretJsonFile, &clientSecretMap)
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			fmt.Printf("clientSecretMap: %v\n", clientSecretMap)
+			clientSecretMapWeb, ok := clientSecretMap["web"].(map[string]any)
+			if !ok {
+				err = errors.New("assertion of value from client_secret.json file failed: web")
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+
+			clientId, clientIdOk := clientSecretMapWeb["client_id"].(string)
+			clientSecret, clientSecretOk := clientSecretMapWeb["client_secret"].(string)
+
+			fmt.Printf("clientId: %v\n", clientId)
+			fmt.Printf("clientIdOk: %v\n", clientIdOk)
+			fmt.Printf("reflect.TypeOf(clientId): %v\n", reflect.TypeOf(clientId))
+			fmt.Printf("clientSecret: %v\n", clientSecret)
+			fmt.Printf("clientSecretOk: %v\n", clientSecretOk)
+			fmt.Printf("reflect.TypeOf(clientSecret): %v\n", reflect.TypeOf(clientSecret))
+
+			if !clientIdOk || !clientSecretOk {
+				err = errors.New("assertion of value from client_secret.json file failed: client_id || client_secret")
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			fmt.Printf("clientId: %v\n", clientId)
+			fmt.Printf("clientSecret: %v\n", clientSecret)
+
+			// リクエストの作成
+			method := "POST"                                   // メソッド
+			endopoint := "https://oauth2.googleapis.com/token" // URL
+			form := url.Values{}                               // フォームデータやHTTPクエリパラメータを扱うmap[string][]string型
+			form.Set("grant_type", "refresh_token")            // SetはAddと違って同じキーを上書きする
+			form.Set("refresh_token", refreshToken)
+			form.Set("client_id", clientId)
+			form.Set("client_secret", clientSecret)
+			body := strings.NewReader(form.Encode())              // HTTPエンコードしてボディを作る
+			requ, err := http.NewRequest(method, endopoint, body) // リクエストの作成
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			requ.Header.Set("Content-Type", "application/x-www-form-urlencoded") // ヘッダーを追加
+
+			// リクエストを送る
+			client := &http.Client{ // クライアントを作成
+				Timeout: 10 * time.Second,
+			}
+			resp, err := client.Do(requ) // リクエストを送信しレスポンスを受け取る
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			defer resp.Body.Close()
+
+			fmt.Printf("resp: %v\n", resp)
+			var req responses.RefreshToken
+			err = json.NewDecoder(resp.Body).Decode(&req)
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+				return err
+			}
+			fmt.Printf("resp.Body: %v\n", resp.Body)
+			fmt.Printf("req.AccessToken: %v\n", req.AccessToken)
+
+			googleAccessToken := req.AccessToken
 
 			// 値をJSON形式で返却
 			return re.JSON(http.StatusOK, map[string]string{
