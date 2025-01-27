@@ -1,13 +1,17 @@
 package responses
 
+import (
+	"github.com/pocketbase/pocketbase/tools/types"
+)
+
 // 認証確認
 type AuthUserInfo struct {
-	Id    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	// AvatorUrl   string `json:"avatorUrl"`
-	// Created     int    `json:"created"` // TODO: 型
-	// Updated     int    `json:"updated"` // TODO: 型
+	Id         string         `json:"id"`
+	Email      string         `json:"email"`
+	Name       string         `json:"name"`
+	AvatarPath string         `json:"avatorUrl"`
+	Created    types.DateTime `json:"created"` // TODO: 型
+	Updated    types.DateTime `json:"updated"` // TODO: 型
 	// AccessToken string `json:"accessToken"`
 }
 

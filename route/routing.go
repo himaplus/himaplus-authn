@@ -106,11 +106,19 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			userRecord := re.Auth
 			fmt.Printf("authUserRecord: %v\n", userRecord)
 
+			// 必要な情報を取得
+
+			// アバターURL
+			avatarPath := "/api/files/_pb_users_auth_" + "/" + userRecord.Id + "/" + userRecord.GetString("avatar")
+
 			// 構造体にマッピング
 			auiResp := &responses.AuthUserInfo{
-				Id:    userRecord.Id,
-				Email: userRecord.Email(),
-				Name:  userRecord.Collection().Name,
+				Id:         userRecord.Id,
+				Email:      userRecord.Email(),
+				Name:       userRecord.Collection().Name,
+				AvatarPath: avatarPath,
+				Created:    userRecord.GetDateTime("created"),
+				Updated:    userRecord.GetDateTime("updated"),
 			}
 			fmt.Printf("auiResp: %v\n", auiResp)
 

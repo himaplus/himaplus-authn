@@ -49,3 +49,8 @@ GET {{baseUrl}}/auth/user HTTP/1.1
 Authorization: {{jwt}}
 
 ###
+
+// gazou
+GET {{baseUrl}}/api/files/_pb_users_auth_/nx2xz63be06l9o0/acg8oc_kqo_s_nxfp_ckhum54va8x2mds6g_iii_n1_whyg_zmpcytenm6_cq_s96_c_b0ld4xvyr6_f79o9gr2jo.png HTTP/1.1
+
+###
