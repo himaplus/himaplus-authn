@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -81,7 +80,7 @@ func collectionOpe(pb *pocketbase.PocketBase) {
 			Required: false,
 		})
 
-		// アクセストークンのテキストフィールド追加
+		// アクセストークンのテキストフィールド追加　HACK: いらんかも
 		userCollection.Fields.Add(&core.TextField{
 			Name:     "accessToken",
 			Max:      255, // The number of characters in google refresh token is 103.
@@ -109,11 +108,9 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			userRecord := re.Auth
 			fmt.Printf("authUserRecord: %v\n", userRecord)
 
-			// リフレッシュトークンを使ってアクセストークンを取得
+			// 認証済みユーザーのリフレッシュトークンを取得
 			refreshToken := userRecord.GetString("refreshToken") // refreshToken := userRecord.FieldsData()["refreshToken"] // 型アサーションが必要
 			fmt.Printf("accessToken: %v\n", refreshToken)
-
-			// Googleへ更新リクエストを送る
 
 			// クライアントIDとクライアントシークレットの取得
 
@@ -131,6 +128,7 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 				fmt.Printf("err: %v\n", err)
 				return err
 			}
+			// mapに変換
 			var clientSecretMap map[string]any // 空のJSON宣言
 			err = json.Unmarshal(clientSecretJsonFile, &clientSecretMap)
 			if err != nil {
@@ -144,17 +142,9 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 				fmt.Printf("err: %v\n", err)
 				return err
 			}
-
+			// anyをstringアサーションして取り出す
 			clientId, clientIdOk := clientSecretMapWeb["client_id"].(string)
 			clientSecret, clientSecretOk := clientSecretMapWeb["client_secret"].(string)
-
-			fmt.Printf("clientId: %v\n", clientId)
-			fmt.Printf("clientIdOk: %v\n", clientIdOk)
-			fmt.Printf("reflect.TypeOf(clientId): %v\n", reflect.TypeOf(clientId))
-			fmt.Printf("clientSecret: %v\n", clientSecret)
-			fmt.Printf("clientSecretOk: %v\n", clientSecretOk)
-			fmt.Printf("reflect.TypeOf(clientSecret): %v\n", reflect.TypeOf(clientSecret))
-
 			if !clientIdOk || !clientSecretOk {
 				err = errors.New("assertion of value from client_secret.json file failed: client_id || client_secret")
 				fmt.Printf("err: %v\n", err)
@@ -162,6 +152,8 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			}
 			fmt.Printf("clientId: %v\n", clientId)
 			fmt.Printf("clientSecret: %v\n", clientSecret)
+
+			// Googleへ更新リクエストを送る
 
 			// リクエストの作成
 			method := "POST"                                   // メソッド
@@ -188,23 +180,20 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 				fmt.Printf("err: %v\n", err)
 				return err
 			}
-			defer resp.Body.Close()
+			defer resp.Body.Close() // リソースの解放 必須
 
-			fmt.Printf("resp: %v\n", resp)
+			// 構造体にマッピング
 			var req responses.RefreshToken
 			err = json.NewDecoder(resp.Body).Decode(&req)
 			if err != nil {
 				fmt.Printf("err: %v\n", err)
 				return err
 			}
-			fmt.Printf("resp.Body: %v\n", resp.Body)
 			fmt.Printf("req.AccessToken: %v\n", req.AccessToken)
-
-			googleAccessToken := req.AccessToken
 
 			// 値をJSON形式で返却
 			return re.JSON(http.StatusOK, map[string]string{
-				"googleAccessToken": googleAccessToken,
+				"googleAccessToken": req.AccessToken,
 			})
 		}).Bind(apis.RequireAuth("_superusers", "users")) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
 
