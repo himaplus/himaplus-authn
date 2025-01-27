@@ -99,7 +99,33 @@ func collectionOpe(pb *pocketbase.PocketBase) {
 
 // カスタムエンドポイント
 func endpointRouting(pb *pocketbase.PocketBase) {
-	// TODO: 認証状態を確認
+	// 認証状態を確認
+	pb.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		se.Router.GET("/auth/user", func(re *core.RequestEvent) error {
+			// 認証済みユーザー（:アクセスを許されたユーザー）のレコードを取得authUserRecord
+			userRecord := re.Auth
+			fmt.Printf("authUserRecord: %v\n", userRecord)
+
+			// 構造体にマッピング
+			auiResp := &responses.AuthUserInfo{
+				Id:    userRecord.Id,
+				Email: userRecord.Email(),
+				Name:  userRecord.Collection().Name,
+			}
+			fmt.Printf("auiResp: %v\n", auiResp)
+
+			// 値をJSON形式で返却
+			return re.JSON(http.StatusOK, map[string]any{
+				"data": map[string]any{
+					"authenticated": true,
+					"userInfo":      auiResp,
+				},
+				"message": "The request requires valid record authorization token.",
+				"status":  200,
+			})
+		}).Bind(apis.RequireAuth("_superusers", "users")) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
+		return se.Next()
+	})
 
 	// アクセストークンを返す
 	pb.OnServe().BindFunc(func(se *core.ServeEvent) error { // pbインスタンスのOnServe()フックを使って処理を鯖起動時にトリガーする // 処理はBindFunc()に渡す
@@ -183,17 +209,17 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 			defer resp.Body.Close() // リソースの解放 必須
 
 			// 構造体にマッピング
-			var req responses.RefreshToken
-			err = json.NewDecoder(resp.Body).Decode(&req)
+			var refTokenResp responses.RefreshToken
+			err = json.NewDecoder(resp.Body).Decode(&refTokenResp)
 			if err != nil {
 				fmt.Printf("err: %v\n", err)
 				return err
 			}
-			fmt.Printf("req.AccessToken: %v\n", req.AccessToken)
+			fmt.Printf("req.AccessToken: %v\n", refTokenResp.AccessToken)
 
 			// 値をJSON形式で返却
 			return re.JSON(http.StatusOK, map[string]string{
-				"googleAccessToken": req.AccessToken,
+				"googleAccessToken": refTokenResp.AccessToken,
 			})
 		}).Bind(apis.RequireAuth("_superusers", "users")) // HTTPメソッド関数にチェーンしてミドルウェアを追加できる
 
