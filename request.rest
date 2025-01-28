@@ -34,15 +34,6 @@ grant_type=refresh_token
 
 ###
 
-// 認証済みユーザーのアクセストークンを取得
-# @name getTokenAuthedUser
-GET {{baseUrl}}/google/access_token HTTP/1.1
-Authorization: {{jwt}}
-
-###
-
-@accessToken = {{getTokenAuthedUser.response.body.$.googleAccessToken}}
-
 // ユーザーの認証状態を確かめる
 # @name checkUsesrAuth
 GET {{baseUrl}}/auth/user HTTP/1.1
