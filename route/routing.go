@@ -198,8 +198,8 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 				Email:       userRecord.Email(),
 				Name:        userRecord.GetString("name"),
 				AvatarPath:  avatarPath,
-				Created:     userRecord.GetDateTime("created"),
-				Updated:     userRecord.GetDateTime("updated"),
+				Created:     userRecord.GetDateTime("created").Time(),
+				Updated:     userRecord.GetDateTime("updated").Time(),
 				AccessToken: refTokenResp.AccessToken,
 			}
 			fmt.Printf("auiResp: %v\n", auiResp)
