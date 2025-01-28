@@ -18,83 +18,11 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/types" // "github.com/pocketbase/pocketbase/tools/types"
 )
 
 // グローバルミドルウェア
 func globalMiddleware(pb *pocketbase.PocketBase) {
 	// 現状なし
-}
-
-// ファイルのルーティング
-func fileRouting(pb *pocketbase.PocketBase) {
-	pb.OnServe().BindFunc(func(se *core.ServeEvent) error { // CONTEXT: OnServe.BindFuncで鯖起動時のイベントの関数を設定
-		// テスト用ページを表示
-
-		// 静的ファイルのバイナリへの埋め込み
-		indexStaticFS, err := view.EmbedIndexFile()
-		if err != nil {
-			return err
-		}
-		// CONTEXT: se.Routerはpbが内部的に利用しているHTTPルーターで、ここにエンドポイントを追加できる
-		// ルーティング
-		se.Router.GET("/{path...}", apis.Static(indexStaticFS, false)) // 第三引数はキャッシュの有無 // "/index/{path...}"
-
-		// 任意のバスに対して適切な静的コンテンツを提供
-
-		// 静的ファイルの埋め込み
-		publicStaticFS, err := view.EmbedStaticFile()
-		if err != nil {
-			return err
-		}
-		// ルーティング
-		se.Router.GET("/public/{path...}", apis.Static(publicStaticFS, false))
-
-		return se.Next()
-	})
-}
-
-// コレクションの操作
-func collectionOpe(pb *pocketbase.PocketBase) {
-	// access token列を追加
-	pb.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		// カスタム対象のコレクションを取得
-		userCollection, err := se.App.FindCollectionByNameOrId("users")
-		if err != nil {
-			return err
-		}
-
-		// change rule types.Pointer(""): 誰でも, types.Pointer("@request.auth.id != ''"): 認証済みユーザーのみ, types.Pointer("@request.auth.id != id"): 認証済みユーザー自身のみ, nil: 管理者のみ
-		userCollection.ListRule = nil
-		userCollection.ViewRule = types.Pointer("@request.auth.id != id")
-		userCollection.CreateRule = types.Pointer("@request.auth.id != id") // 確定
-		userCollection.UpdateRule = types.Pointer("@request.auth.id != id")
-		userCollection.DeleteRule = nil
-
-		// フィールドやリレーションキーを追加
-
-		// リフレッシュトークンのテキストフィールド追加
-		userCollection.Fields.Add(&core.TextField{
-			Name:     "refreshToken",
-			Max:      255, // The number of characters in google access token is 222.
-			Required: false,
-		})
-
-		// アクセストークンのテキストフィールド追加　HACK: いらんかも
-		userCollection.Fields.Add(&core.TextField{
-			Name:     "accessToken",
-			Max:      255, // The number of characters in google refresh token is 103.
-			Required: false,
-		})
-
-		// 保存
-		err = se.App.Save(userCollection)
-		if err != nil {
-			return err
-		}
-
-		return se.Next()
-	})
 }
 
 // カスタムエンドポイント
@@ -291,16 +219,18 @@ func endpointRouting(pb *pocketbase.PocketBase) {
 }
 
 // ルーティング
-func Routing() *pocketbase.PocketBase {
-	// pbインスタンス
-	pb := pocketbase.New()
-
-	// 拡張
-
+func SetupRouter(pb *pocketbase.PocketBase) *pocketbase.PocketBase {
+	// 静的ファイル公開
+	err := view.LoadingStaticFile(pb)
+	if err != nil {
+		logging.ErrorLog("Loading static file:", err)
+		panic(err)
+	}
+	// ミドルウェア
 	globalMiddleware(pb) // ミドルウェア
-	fileRouting(pb)      // ファイル公開
-	collectionOpe(pb)    // コレクション操作
-	endpointRouting(pb)  // カスタムエンドポイントのルーティング
+
+	// カスタムエンドポイントのルーティング
+	endpointRouting(pb)
 
 	return pb
 }

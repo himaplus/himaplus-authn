@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"himaplus-authn/collection"
 	"himaplus-authn/common/logging"
 	"himaplus-authn/route"
 
@@ -18,7 +19,9 @@ type InitInstance struct {
 // mainでの初期化処理
 func Init() (*InitInstance, error) {
 	// 成果物構造体の宣言
-	initInstance := &InitInstance{} // 同じ: initInstance := new(InitInstance)
+	initInstance := &InitInstance{
+		App: pocketbase.New(), // pbインスタンス
+	} // initInstance := new(InitInstance)も同じだが、リテラル構文だとフィールドの初期化ができる
 
 	// ログ設定を初期化
 	err := logging.InitLogging() // セットアップ
@@ -35,8 +38,9 @@ func Init() (*InitInstance, error) {
 		return nil, err
 	}
 
-	// DB初期化やルーティング設定など、依存関係にかかわるものの初期化とDIコンテナによる各層の依存関係登録
-	initInstance.App = route.Routing()
+	// initInstanceを初期化
+	initInstance.App = collection.CustomCollection(initInstance.App) // コレクションのカスタム
+	initInstance.App = route.SetupRouter(initInstance.App)           // ルーティング設定など
 
 	return initInstance, nil
 }
