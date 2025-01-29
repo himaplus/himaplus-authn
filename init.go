@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"himaplus-authn/collection"
 	"himaplus-authn/common/logging"
+	"himaplus-authn/hook"
 	"himaplus-authn/route"
 
 	"github.com/joho/godotenv"
@@ -40,7 +41,8 @@ func Init() (*InitInstance, error) {
 
 	// initInstanceを初期化
 	initInstance.App = collection.CustomCollection(initInstance.App) // コレクションのカスタム
-	initInstance.App = route.SetupRouter(initInstance.App)           // ルーティング設定など
+	initInstance.App = hook.RegisterHooks(initInstance.App) // 既存APIに対してのフック処理
+	initInstance.App = route.SetupRouter(initInstance.App) // ルーティング設定など
 
 	return initInstance, nil
 }
